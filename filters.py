@@ -2,7 +2,6 @@ import numpy as np
 from itertools import combinations
 from utils import get_distances, get_adjacency
 from math import ceil
-from PIL import Image
 
 class coordinate_filter:
     def __init__(self, dims) -> None:
@@ -20,119 +19,6 @@ class distance_filter:
     def __call__(self, points) -> np.array:
         distances = get_distances(points, self.reference_point, self.metric)
         return distances
-    
-class img_background_filter:
-    def __init__(self, ref_image, window_size) -> None:
-        self.window_size = window_size
-        self.ref_image = ref_image / 255
-        
-    def __call__(self, points, threshold, max_steps) -> np.array:
-        filtered_points = points
-        removed_points = []
-        prev_len = -1
-        channel_means = np.mean(self.ref_image,axis=(0,1))
-        channel_stddevs = np.std(self.ref_image,axis=(0,1))
-        steps = 0
-        while prev_len < len(removed_points) and steps < max_steps:
-            prev_len = len(removed_points)
-            new_filtered_points = []
-            for point in filtered_points:
-                x_coord = int(point[0] * self.ref_image.shape[0])
-                y_coord = int(point[1] * self.ref_image.shape[1])
-                top_left_corner = [x_coord - ceil(self.window_size[0]/2), y_coord + ceil(self.window_size[1]/2)]
-                if top_left_corner[0] < 0:
-                    top_left_corner[0] = 0
-
-                bottom_right_corner = [x_coord + ceil(self.window_size[0]/2), y_coord - ceil(self.window_size[1]/2)]
-                if bottom_right_corner[1] < 0:
-                    bottom_right_corner[1] = 0
-
-
-                window = self.ref_image[top_left_corner[0]:bottom_right_corner[0], bottom_right_corner[1]:top_left_corner[1], :]
-                local_avg_z_score = np.mean(np.abs((np.mean(window, axis=(0,1)) - channel_means)) / channel_stddevs)
-                if local_avg_z_score > threshold:
-                    new_filtered_points.append(point)
-                else:
-                    self.ref_image[x_coord,y_coord] = channel_means
-                    removed_points.append(point)
-            filtered_points = new_filtered_points
-            #channel_means = np.mean(self.ref_image,axis=(0,1))
-            #channel_stddevs = np.std(self.ref_image,axis=(0,1))
-            steps += 1
-            print('Steps: ', steps)
-            image = Image.fromarray((self.ref_image * 255).astype(np.uint8))
-            image.show()
-
-
-        return np.array(filtered_points)
-
-class img_contour_filter:
-    def __init__(self, ref_image, window_size) -> None:
-        self.window_size = window_size
-        self.ref_image = ref_image / 255
-        self.channel_means = self.ref_image.mean(axis=(0,1))
-        
-    def __call__(self, points, threshold, max_steps) -> np.array:
-        filtered_points = []
-        removed_points = []
-        steps = 0
-        prev_len = -1
-        while prev_len < len(removed_points) and steps < max_steps:
-            prev_len = len(removed_points)
-            new_filtered_points = []
-            for point in points:
-                x_coord = int(point[0] * self.ref_image.shape[0])
-                y_coord = int(point[1] * self.ref_image.shape[1])
-                top_left_corner = [x_coord - ceil(self.window_size[0]/2), y_coord + ceil(self.window_size[1]/2)]
-                if top_left_corner[0] < 0:
-                    top_left_corner[0] = 0
-                bottom_right_corner = [x_coord + ceil(self.window_size[0]/2), y_coord - ceil(self.window_size[1]/2)]
-                if bottom_right_corner[1] < 0:
-                    bottom_right_corner[1] = 0
-                window = self.ref_image[top_left_corner[0]:bottom_right_corner[0], bottom_right_corner[1]:top_left_corner[1], :]
-                mean_local_std_devs = window.std(axis=(0,1)).mean()
-                local_means = window.mean(axis = (0,1))
-                if mean_local_std_devs > threshold:
-                    new_filtered_points.append(point)
-                else:
-                    local_means = window.mean(axis = (0,1))
-                    self.ref_image[x_coord,y_coord] = local_means
-                    removed_points.append(point)
-            
-            filtered_points = new_filtered_points
-            steps += 1
-            print('Steps: ', steps)
-            image = Image.fromarray((self.ref_image * 255).astype(np.uint8))
-            image.show()
-
-            
-
-        return np.array(filtered_points)
-
-class img_color_smoother:
-    def __init__(self, ref_image, window_size) -> None:
-        self.window_size = window_size
-        self.ref_image = ref_image / 255
-        
-    def __call__(self, points) -> np.array:
-        filtered_points = []
-        for point in points:
-            x_coord = int(point[0] * self.ref_image.shape[0])
-            y_coord = int(point[1] * self.ref_image.shape[1])
-            top_left_corner = [x_coord - ceil(self.window_size[0]/2), y_coord + ceil(self.window_size[1]/2)]
-            if top_left_corner[0] < 0:
-                top_left_corner[0] = 0
-            bottom_right_corner = [x_coord + ceil(self.window_size[0]/2), y_coord - ceil(self.window_size[1]/2)]
-            if bottom_right_corner[1] < 0:
-                bottom_right_corner[1] = 0
-            window = self.ref_image[top_left_corner[0]:bottom_right_corner[0], bottom_right_corner[1]:top_left_corner[1], :]
-            local_mean_color = window.mean(axis=(0,1))
-
-            self.ref_image[x_coord,y_coord] = local_mean_color
-            filtered_points.append(np.array((point[0], point[1], *local_mean_color)))
-
-        return np.array(filtered_points)
-
 
 class local_stat_filters:
     def __init__(self, measure, window_size, overlap) -> None:
