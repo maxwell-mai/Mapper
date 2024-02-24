@@ -19,3 +19,6 @@ This implementation can be expanded in a variety of ways.
 Each row is a boolean mask that represents whether a point belongs to a set in the cover or not. 
 A value of 1 in position i, j means that the point at row j in the input points array belongs to set i of the cover
 3. metrics can be added to utils.py in the get_distances function by simply adding another condition to the elif block. the metric should compute distances between a single point and a list of points.
+
+Requirements Notes:
+matplotlib is only required in the examples.ipynb but is not required to use mapper
