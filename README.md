@@ -1,7 +1,11 @@
 Mapper is an algorithm for performing topological data analysis of point clouds which takes the following parameters:
+
 let X represent the input space
+
 a filter function f: X -> F where F represents sum subspace of R^N of lower dimension than X
+
 a cover function c: F -> C where C is a cover of F
+
 epsilon, min_neighbors, and a metric for DBSCAN clustering of the preimages of the cover function
 
 the output is called the nerve, which is a graph representing intersections between the covering sets
